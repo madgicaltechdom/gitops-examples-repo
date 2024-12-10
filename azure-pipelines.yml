@@ -1,0 +1,13 @@
+trigger: none
+
+stages:
+  - stage: Deploy
+    jobs:
+      - job: DeployApp
+        pool:
+          name: '<YOUR_POOL_NAME>'  # Specify your pool name here
+
+        steps:
+          - checkout: self
+
+          # Add your steps here

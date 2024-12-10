@@ -1,0 +1,65 @@
+name: 'Create Azure Infra via Terraform'
+
+on:
+  workflow_dispatch:
+
+jobs:
+  Azure-Infra-Creation-via-Terraform:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Checkout the repository code
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      # Step 2: Setup Terraform
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v1
+
+      # Step 3: Initialize Terraform
+      - name: Terraform Init
+        working-directory: staging/
+        run: terraform init
+        env:
+          ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          ARM_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+          ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+
+      # Step 4: Generate Terraform Plan
+      - name: Terraform Plan
+        working-directory: staging/
+        run: terraform plan
+        env:
+          ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          ARM_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+          ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+
+      # Step 5: Apply Terraform changes
+      - name: Terraform Apply
+        working-directory: staging/
+        run: |
+          terraform apply -auto-approve
+        env:
+          ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          ARM_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+          ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+
+      # Step 6: Trigger Azure DevOps Pipeline
+      - name: Trigger Azure DevOps Pipeline
+        run: |
+            curl --user "${{ secrets.AZURE_DEVOPS_USERNAME }}:${{ secrets.AZURE_DEVOPS_PERSONAL_ACCESS_TOKEN }}" \
+                --request POST \
+                --header "Content-Type: application/json" \
+                --data '{
+                "resources": {
+                    "repositories": {
+                    "self": {
+                        "refName": "refs/heads/main"
+                    }
+                    }
+                }
+                }' \
+                "https://dev.azure.com/${{ secrets.AZURE_DEVOPS_ORG }}/${{ secrets.AZURE_DEVOPS_PROJECT }}/_apis/pipelines/${{ secrets.AZURE_DEVOPS_PIPELINE_ID }}/runs?api-version=6.0-preview.1"
